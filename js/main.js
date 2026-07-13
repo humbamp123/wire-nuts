@@ -37,6 +37,9 @@ function calculateWireNut() {
     displayResults(compatibleNuts, wireCombination, totalWires);
 }
 
+// A combination is an "Ideal Match" when it uses at least this fraction of the connector's capacity
+const IDEAL_FILL = 0.75;
+
 /**
  * Finds wire nuts compatible with the given wire combination
  * @param {Object} wireCombination - Object mapping gauge to count
@@ -44,33 +47,36 @@ function calculateWireNut() {
  */
 function findCompatibleNuts(wireCombination) {
     const compatibleNuts = [];
+    const entries = Object.entries(wireCombination);
 
     wireNuts.forEach(nut => {
-        let isCompatible = true;
-        let isIdeal = true;
+        // Capacity: every gauge must be within the nut's per-gauge max
+        if (!entries.every(([gauge, count]) => count <= (nut.maxWires[gauge] || 0))) {
+            return;
+        }
 
-        // Check if this wire nut can handle all the wires
-        for (const [gauge, count] of Object.entries(wireCombination)) {
-            const maxAllowed = nut.maxWires[gauge] || 0;
-            const minRequired = nut.minWires[gauge] || 0;
+        // Fraction of the nut's capacity this combination uses,
+        // summed across gauges (e.g. 2 of 5 slots + 3 of 4 slots = 1.15)
+        const fill = entries.reduce((sum, [gauge, count]) => sum + count / nut.maxWires[gauge], 0);
 
-            if (count > maxAllowed || count < minRequired) {
-                isCompatible = false;
-                break;
-            }
-
-            // Check if it's ideal (close to max capacity)
-            if (count < maxAllowed - 2) {
-                isIdeal = false;
+        // minWires[gauge] describes the smallest allowed single-gauge fill (n × gauge alone).
+        // Mixed combinations pass when their total fill reaches the smallest declared minimum fill.
+        const minRatios = entries
+            .filter(([gauge]) => (nut.minWires[gauge] || 0) > 0)
+            .map(([gauge]) => nut.minWires[gauge] / nut.maxWires[gauge]);
+        if (minRatios.length > 0) {
+            if (entries.length === 1) {
+                const [gauge, count] = entries[0];
+                if (count < nut.minWires[gauge]) return;
+            } else if (fill < Math.min(...minRatios)) {
+                return;
             }
         }
 
-        if (isCompatible) {
-            compatibleNuts.push({
-                ...nut,
-                isIdeal: isIdeal
-            });
-        }
+        compatibleNuts.push({
+            ...nut,
+            isIdeal: fill >= IDEAL_FILL
+        });
     });
 
     return compatibleNuts;

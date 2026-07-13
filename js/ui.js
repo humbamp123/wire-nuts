@@ -58,7 +58,7 @@ export function addWireEntry() {
  * Removes a wire entry row by its index
  * @param {number} index - The index of the wire entry to remove
  */
-export function removeWireEntry(index) {
+function removeWireEntry(index) {
     const entry = document.querySelector(`[data-index="${index}"]`);
     if (entry) {
         entry.style.animation = 'fadeIn 0.2s ease reverse';
@@ -112,7 +112,7 @@ export function displayResults(compatibleNuts, wireCombination, totalWires) {
             .join('');
 
         // Sort: ideal first, then by color (smaller to larger)
-        const colorOrder = { 'Orange': 1, 'Yellow': 2, 'Red': 3, 'Blue': 4, 'Tan': 4, 'Gray': 5, 'Green': 6, 'Purple': 7 };
+        const colorOrder = { 'Orange': 1, 'Yellow': 2, 'Red': 3, 'Blue': 4, 'Gray': 5 };
         compatibleNuts.sort((a, b) => {
             if (a.isIdeal && !b.isIdeal) return -1;
             if (!a.isIdeal && b.isIdeal) return 1;
